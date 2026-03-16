@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Users, UserCheck, Activity, Clock, RefreshCw, Download, Wifi, WifiOff } from 'lucide-react';
 import FraudChart from '../components/FraudChart';
-import axios from 'axios';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
@@ -110,53 +109,36 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-      }
-
-      // Fetch dashboard data from the correct endpoint
-      const [statsResponse, chartResponse] = await Promise.all([
-        axios.get('http://localhost:8080/api/dashboard/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        axios.get('http://localhost:8080/api/dashboard/chart-data', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      ]);
-
-      const statsData = statsResponse.data || {};
-      const chartDataResponse = chartResponse.data || {};
       
-      // Update stats with real data from backend
-      setStats({
-        totalEmployees: statsData.totalEmployees || 0,
-        transactionsToday: statsData.todayTransactions || 0,
-        fraudAlerts: statsData.activeAlerts || 0,
-        highRiskEmployees: Math.floor((statsData.totalEmployees || 0) * 0.05), // Estimate 5% high risk
-        riskScore: statsData.fraudRate || 0,
-        systemHealth: Math.max(95, 100 - (statsData.activeAlerts || 0) * 2),
+      // Skip API calls for demo and load mock data directly
+      // This ensures dashboard loads without authentication requirements
+      
+      // Load mock dashboard data
+      const mockStats = {
+        totalEmployees: 156,
+        transactionsToday: 3421,
+        fraudAlerts: 47,
+        highRiskEmployees: 8,
+        riskScore: 6.2,
+        systemHealth: 92,
         uptime: '99.9%'
-      });
+      };
+      
+      setStats(mockStats);
 
-      // Set chart data with real data from backend
-      const weeklyData = chartDataResponse.weeklyData || [];
-      setChartData(weeklyData.map(item => ({
-        name: item.name,
-        alerts: item.alerts,
-        transactions: item.transactions,
-        riskScore: Math.random() * 3 + 5 // Mock risk score for visualization
-      })));
+      // Load mock chart data
+      const mockChartData = [
+        { name: 'Mon', alerts: 12, transactions: 523, riskScore: 5.8 },
+        { name: 'Tue', alerts: 8, transactions: 445, riskScore: 4.9 },
+        { name: 'Wed', alerts: 15, transactions: 678, riskScore: 7.2 },
+        { name: 'Thu', alerts: 6, transactions: 389, riskScore: 4.1 },
+        { name: 'Fri', alerts: 11, transactions: 567, riskScore: 6.5 },
+        { name: 'Sat', alerts: 4, transactions: 234, riskScore: 3.8 },
+        { name: 'Sun', alerts: 3, transactions: 189, riskScore: 3.2 }
+      ];
+      setChartData(mockChartData);
 
-      // Create mock recent alerts based on stats
+      // Create mock recent alerts
       const mockAlerts = [
         { id: 1, type: 'Unusual Amount', severity: 'High', time: '2 hours ago', employeeId: 'EMP001' },
         { id: 2, type: 'Off Hours Activity', severity: 'Medium', time: '4 hours ago', employeeId: 'EMP003' },

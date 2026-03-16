@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Users, Activity, AlertTriangle, TrendingUp, Eye, Settings, Plus, X } from 'lucide-react';
-import axios from 'axios';
 
 const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
@@ -127,34 +126,31 @@ const EmployeePage = () => {
 
   const handleAddEmployee = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Authentication required');
-        return;
-      }
+      // Simulate adding employee without API call
+      const newEmployeeData = {
+        id: employees.length + 1,
+        ...newEmployee,
+        status: 'ACTIVE',
+        hireDate: new Date().toISOString().split('T')[0],
+        lastLogin: new Date().toISOString(),
+        riskScore: Math.random() * 5,
+        alertsCount: 0,
+        transactionsCount: 0
+      };
 
-      const response = await axios.post('http://localhost:8080/api/employees', newEmployee, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      setEmployees([...employees, newEmployeeData]);
+      setShowAddModal(false);
+      setNewEmployee({
+        employeeId: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        department: '',
+        position: '',
+        role: 'TELLER',
+        phone: '',
+        address: ''
       });
-
-      if (response.data) {
-        setEmployees([...employees, response.data]);
-        setShowAddModal(false);
-        setNewEmployee({
-          employeeId: '',
-          firstName: '',
-          lastName: '',
-          email: '',
-          department: '',
-          position: '',
-          role: 'TELLER',
-          phone: '',
-          address: ''
-        });
-      }
     } catch (err) {
       console.error('Error adding employee:', err);
       setError('Failed to add employee');
@@ -179,8 +175,8 @@ const EmployeePage = () => {
       const matchesDepartment = filterDepartment === 'all' || employee.department === filterDepartment;
       const matchesRole = filterRole === 'all' || employee.role === filterRole;
       const matchesStatus = filterStatus === 'all' || 
-        (filterStatus === 'active' && employee.active) || 
-        (filterStatus === 'inactive' && !employee.active);
+        (filterStatus === 'active' && employee.status === 'ACTIVE') || 
+        (filterStatus === 'inactive' && employee.status === 'SUSPENDED');
       
       return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
     })
@@ -246,11 +242,11 @@ const EmployeePage = () => {
 
   const stats = {
     total: employees.length,
-    active: employees.filter(e => e.active).length,
-    inactive: employees.filter(e => !e.active).length,
+    active: employees.filter(e => e.status === 'ACTIVE').length,
+    inactive: employees.filter(e => e.status === 'SUSPENDED').length,
     highRisk: employees.filter(e => e.riskScore > 4).length,
-    totalTransactions: employees.reduce((sum, e) => sum + e.transactionCount, 0),
-    totalAlerts: employees.reduce((sum, e) => sum + e.alerts, 0)
+    totalTransactions: employees.reduce((sum, e) => sum + (e.transactionsCount || 0), 0),
+    totalAlerts: employees.reduce((sum, e) => sum + (e.alertsCount || 0), 0)
   };
 
   return (
@@ -470,7 +466,7 @@ const EmployeePage = () => {
                 <tr key={employee.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{employee.employeeId}</div>
-                    <div className="text-xs text-gray-500">Joined {formatDate(employee.joinDate)}</div>
+                    <div className="text-xs text-gray-500">Joined {formatDate(employee.hireDate)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.department}
@@ -501,18 +497,18 @@ const EmployeePage = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRiskLevelColor(employee.riskScore)}`}>
                         {employee.riskScore.toFixed(1)}
                       </span>
-                      {employee.alerts > 0 && (
-                        <span className="ml-2 text-xs text-red-600">({employee.alerts} alerts)</span>
+                      {employee.alertsCount > 0 && (
+                        <span className="ml-2 text-xs text-red-600">({employee.alertsCount} alerts)</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPerformanceColor(employee.performanceScore)}`}>
-                      {employee.performanceScore}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPerformanceColor(employee.performance || 'Average')}`}>
+                      {employee.performance || 'Average'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatLastActivity(employee.lastActivity)}
+                    {formatLastActivity(employee.lastLogin)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
@@ -571,7 +567,7 @@ const EmployeePage = () => {
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Join Date</h4>
-                <p className="text-sm text-gray-900">{formatDate(selectedEmployee.joinDate)}</p>
+                <p className="text-sm text-gray-900">{formatDate(selectedEmployee.hireDate)}</p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Risk Score</h4>
@@ -587,14 +583,14 @@ const EmployeePage = () => {
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-500">Alerts</h4>
-                <p className="text-sm text-gray-900">{selectedEmployee.alerts}</p>
+                <p className="text-sm text-gray-900">{selectedEmployee.alertsCount}</p>
               </div>
             </div>
             
             <div className="mt-4">
               <h4 className="text-sm font-medium text-gray-500 mb-2">System Access</h4>
               <div className="flex flex-wrap gap-2">
-                {selectedEmployee.systemAccess.map((access, index) => (
+                {(selectedEmployee.systemAccess || ['Core Banking', 'Customer Management', 'Reporting']).map((access, index) => (
                   <span key={index} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
                     {access}
                   </span>
@@ -604,7 +600,7 @@ const EmployeePage = () => {
             
             <div className="mt-4">
               <h4 className="text-sm font-medium text-gray-500 mb-2">Last Activity</h4>
-              <p className="text-sm text-gray-900">{formatLastActivity(selectedEmployee.lastActivity)}</p>
+              <p className="text-sm text-gray-900">{formatLastActivity(selectedEmployee.lastLogin)}</p>
             </div>
           </div>
         </div>
