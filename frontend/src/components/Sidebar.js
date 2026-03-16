@@ -74,17 +74,6 @@ const Sidebar = () => {
           })}
         </div>
       </nav>
-      
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <div className="bg-gray-100 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">
-            Need Help?
-          </h3>
-          <p className="text-xs text-gray-600">
-            Contact the IT support team for assistance with the fraud monitoring system.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

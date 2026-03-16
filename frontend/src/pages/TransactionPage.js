@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Download } from 'lucide-react';
 
 const TransactionPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -8,7 +8,6 @@ const TransactionPage = () => {
   const [filterFlagged, setFilterFlagged] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Load example data immediately for demonstration
@@ -165,15 +164,6 @@ const TransactionPage = () => {
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-100 border border border-red-400 text-red-700 px-4 py-3 rounded-md mb-6">
-          <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2" />
-            <span>{error}</span>
-          </div>
-        </div>
-      )}
 
       {/* Loading State */}
       {loading && (
@@ -250,7 +240,7 @@ const TransactionPage = () => {
       )}
 
       {/* Transaction Table */}
-      {!loading && !error && (
+      {!loading && (
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900">Transactions</h2>
@@ -351,7 +341,7 @@ const TransactionPage = () => {
           </div>
         )}
 
-      {filteredTransactions.length === 0 && !loading && !error && (
+      {filteredTransactions.length === 0 && !loading && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-lg">No transactions found</div>
           <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>

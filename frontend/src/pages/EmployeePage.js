@@ -436,10 +436,10 @@ const EmployeePage = () => {
                   </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
+                  Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position
+                  Department
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
@@ -467,6 +467,12 @@ const EmployeePage = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{employee.employeeId}</div>
                     <div className="text-xs text-gray-500">Joined {formatDate(employee.hireDate)}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {employee.firstName} {employee.lastName}
+                    </div>
+                    <div className="text-xs text-gray-500">{employee.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.department}

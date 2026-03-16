@@ -72,14 +72,21 @@ function App() {
 // Layout component to wrap pages with Sidebar and Navbar
 function Layout({ children }) {
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="flex-1">
-        <Navbar />
-        <main className="p-6">
-          {children}
-        </main>
+    <div className="flex flex-col min-h-screen">
+      <div className="flex flex-1">
+        <Sidebar />
+        <div className="flex-1">
+          <Navbar />
+          <main className="p-6">
+            {children}
+          </main>
+        </div>
       </div>
+      <footer className="bg-gray-100 border-t border-gray-200 py-4 px-6">
+        <div className="text-center text-sm text-gray-600">
+          <span className="font-medium">Need Help?</span> Contact the IT support team for assistance with the fraud monitoring system.
+        </div>
+      </footer>
     </div>
   );
 }
