@@ -37,10 +37,6 @@ public class ReportController {
         return ResponseEntity.ok(data);
     }
 
-    public int checkError() {
-        return 0;
-    }
-
     @PostMapping("/generate")
     public ResponseEntity<Map<String, String>> generateReport(@RequestBody Map<String, Object> reportRequest) {
         // Mock report generation
