@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Users, Activity, AlertTriangle, TrendingUp, Eye, Settings } from 'lucide-react';
+import { Search, Filter, Users, Activity, AlertTriangle, TrendingUp, Eye, Settings, Plus, X } from 'lucide-react';
 import axios from 'axios';
 
 const EmployeePage = () => {
@@ -14,6 +14,18 @@ const EmployeePage = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({
+    employeeId: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    department: '',
+    position: '',
+    role: 'TELLER',
+    phone: '',
+    address: ''
+  });
 
   useEffect(() => {
     fetchEmployees();
@@ -43,6 +55,49 @@ const EmployeePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddEmployee = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await axios.post('http://localhost:8080/api/employees', newEmployee, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data) {
+        setEmployees([...employees, response.data]);
+        setShowAddModal(false);
+        setNewEmployee({
+          employeeId: '',
+          firstName: '',
+          lastName: '',
+          email: '',
+          department: '',
+          position: '',
+          role: 'TELLER',
+          phone: '',
+          address: ''
+        });
+      }
+    } catch (err) {
+      console.error('Error adding employee:', err);
+      setError('Failed to add employee');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setNewEmployee({
+      ...newEmployee,
+      [e.target.name]: e.target.value
+    });
   };
 
   const departments = ['all', 'Retail Banking', 'Commercial Banking', 'Audit', 'Risk Management', 'Operations'];
@@ -139,6 +194,13 @@ const EmployeePage = () => {
           <p className="text-gray-600">Monitor and manage bank employees</p>
         </div>
         <div className="flex space-x-3">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Employee
+          </button>
           <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center">
             <Settings className="h-4 w-4 mr-2" />
             Settings
@@ -484,6 +546,164 @@ const EmployeePage = () => {
         <div className="text-center py-12">
           <div className="text-gray-400 text-lg">No employees found</div>
           <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>
+        </div>
+      )}
+
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Add New Employee</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={newEmployee.firstName}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={newEmployee.lastName}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                <input
+                  type="text"
+                  name="employeeId"
+                  value={newEmployee.employeeId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="EMP001"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={newEmployee.email}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <select
+                    name="department"
+                    value={newEmployee.department}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Retail Banking">Retail Banking</option>
+                    <option value="Commercial Banking">Commercial Banking</option>
+                    <option value="Audit">Audit</option>
+                    <option value="Risk Management">Risk Management</option>
+                    <option value="Operations">Operations</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                  <input
+                    type="text"
+                    name="position"
+                    value={newEmployee.position}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Bank Teller"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select
+                    name="role"
+                    value={newEmployee.role}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="TELLER">TELLER</option>
+                    <option value="ANALYST">ANALYST</option>
+                    <option value="AUDITOR">AUDITOR</option>
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={newEmployee.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="+1234567890"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <textarea
+                  name="address"
+                  value={newEmployee.address}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                  placeholder="Employee address"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddEmployee}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Add Employee
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
