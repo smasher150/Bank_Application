@@ -205,7 +205,6 @@ const ReportsPage = () => {
       setLoading(true);
       
       // Simulate report generation without API calls
-      console.log(`Generating report: ${reportId}, Type: ${reportType}, Format: ${format}`);
       
       // Simulate download
       setTimeout(() => {

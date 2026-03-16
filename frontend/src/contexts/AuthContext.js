@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -21,7 +20,6 @@ export const AuthProvider = ({ children }) => {
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
       setToken(savedToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
       // For demo, we'll just set loading to false without validation
       setLoading(false);
     } else {
@@ -43,7 +41,6 @@ export const AuthProvider = ({ children }) => {
       setUser(adminUser);
       setToken('demo-admin-token');
       localStorage.setItem('token', 'demo-admin-token');
-      axios.defaults.headers.common['Authorization'] = `Bearer demo-admin-token`;
       
       return { success: true };
     }
@@ -63,7 +60,6 @@ export const AuthProvider = ({ children }) => {
       setUser(matchedUser);
       setToken('demo-user-token');
       localStorage.setItem('token', 'demo-user-token');
-      axios.defaults.headers.common['Authorization'] = `Bearer demo-user-token`;
       
       return { success: true };
     }
@@ -78,7 +74,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   const value = {

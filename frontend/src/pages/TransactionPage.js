@@ -146,7 +146,7 @@ const TransactionPage = () => {
   const transactionTypes = ['all', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'PAYMENT', 'REFUND'];
 
   const handleViewTransaction = (transaction) => {
-    console.log('View transaction:', transaction);
+    // Handle transaction view
   };
 
   return (

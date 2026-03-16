@@ -52,7 +52,6 @@ const Dashboard = () => {
     stompClientRef.current = stompClient;
 
     stompClient.onConnect = (frame) => {
-      console.log('Connected to WebSocket: ' + frame);
       setIsConnected(true);
       
       // Subscribe to dashboard updates

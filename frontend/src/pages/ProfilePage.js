@@ -43,19 +43,16 @@ const ProfilePage = () => {
   const handleProfileUpdate = (e) => {
     e.preventDefault();
     // Handle profile update
-    console.log('Profile updated:', profileData);
   };
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
     // Handle password change
-    console.log('Password changed:', passwordData);
   };
 
   const handleNotificationUpdate = (e) => {
     e.preventDefault();
     // Handle notification settings update
-    console.log('Notifications updated:', notificationSettings);
   };
 
   return (
