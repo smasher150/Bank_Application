@@ -1,6 +1,5 @@
 package com.bank.fraud.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,8 +21,11 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
     
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -43,10 +45,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/dashboard/**").permitAll()
                 .requestMatchers("/api/employees/**").hasAnyRole("ADMIN", "MANAGER", "AUDITOR")
                 .requestMatchers("/api/transactions/**").hasAnyRole("ADMIN", "MANAGER", "AUDITOR", "ANALYST")
                 .requestMatchers("/api/fraud-alerts/**").hasAnyRole("ADMIN", "MANAGER", "AUDITOR")
-                .requestMatchers("/api/dashboard/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

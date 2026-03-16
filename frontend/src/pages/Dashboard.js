@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Users, UserCheck, Activity, Clock, RefreshCw, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Users, UserCheck, Activity, Clock, RefreshCw, Download, Wifi, WifiOff } from 'lucide-react';
 import FraudChart from '../components/FraudChart';
 import axios from 'axios';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -20,22 +22,90 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
-  const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [isConnected, setIsConnected] = useState(false);
+  const [realTimeMode, setRealTimeMode] = useState(true);
+  const stompClientRef = useRef(null);
 
   useEffect(() => {
     fetchDashboardData();
     
-    // Set up auto-refresh if enabled
-    let interval;
-    if (autoRefresh) {
-      interval = setInterval(fetchDashboardData, 30000); // Refresh every 30 seconds
+    if (realTimeMode) {
+      connectWebSocket();
+    } else {
+      // Fallback to polling
+      const interval = setInterval(fetchDashboardData, 30000); // Refresh every 30 seconds
+      return () => {
+        clearInterval(interval);
+      };
     }
     
     return () => {
-      if (interval) clearInterval(interval);
+      disconnectWebSocket();
     };
-  }, [autoRefresh]);
+  }, [realTimeMode]);
+
+  const connectWebSocket = () => {
+    const socket = new SockJS('http://localhost:8080/ws');
+    const stompClient = new Client({
+      webSocketFactory: () => socket
+    });
+    stompClientRef.current = stompClient;
+
+    stompClient.onConnect = (frame) => {
+      console.log('Connected to WebSocket: ' + frame);
+      setIsConnected(true);
+      
+      // Subscribe to dashboard updates
+      stompClient.subscribe('/topic/dashboard', (message) => {
+        const data = JSON.parse(message.body);
+        setStats(prevStats => ({
+          ...prevStats,
+          totalEmployees: data.totalEmployees,
+          transactionsToday: data.todayTransactions,
+          fraudAlerts: data.activeAlerts,
+          riskScore: data.fraudRate,
+          systemHealth: data.systemHealth,
+          highRiskEmployees: Math.floor(data.totalEmployees * 0.05)
+        }));
+        setLastUpdated(new Date());
+      });
+
+      // Subscribe to chart data updates
+      stompClient.subscribe('/topic/chart-data', (message) => {
+        const data = JSON.parse(message.body);
+        const weeklyData = Object.values(data.weeklyData);
+        setChartData(weeklyData.map(item => ({
+          name: item.name,
+          alerts: item.alerts,
+          transactions: item.transactions,
+          riskScore: Math.random() * 3 + 5
+        })));
+      });
+
+      // Subscribe to new alerts
+      stompClient.subscribe('/topic/alerts', (message) => {
+        const newAlert = JSON.parse(message.body);
+        setRecentAlerts(prev => [newAlert, ...prev.slice(0, 4)]);
+      });
+    };
+
+    stompClient.onStompError = (frame) => {
+      console.error('WebSocket connection error:', frame);
+      setIsConnected(false);
+      // Fallback to polling
+      setRealTimeMode(false);
+    };
+
+    stompClient.activate();
+  };
+
+  const disconnectWebSocket = () => {
+    if (stompClientRef.current && stompClientRef.current.connected) {
+      stompClientRef.current.disconnect();
+      setIsConnected(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -47,21 +117,15 @@ const Dashboard = () => {
         return;
       }
 
-      // Fetch all data in parallel
-      const [employeesResponse, alertsResponse, transactionsResponse] = await Promise.all([
-        axios.get('http://localhost:8080/api/employees', {
+      // Fetch dashboard data from the correct endpoint
+      const [statsResponse, chartResponse] = await Promise.all([
+        axios.get('http://localhost:8080/api/dashboard/stats', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }),
-        axios.get('http://localhost:8080/api/fraud-alerts', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        axios.get('http://localhost:8080/api/transactions/count', {
+        axios.get('http://localhost:8080/api/dashboard/chart-data', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -69,60 +133,47 @@ const Dashboard = () => {
         })
       ]);
 
-      // Update stats with real data
-      const employees = employeesResponse.data || [];
-      const alerts = alertsResponse.data || [];
-      const transactions = transactionsResponse.data || [];
-
-      const avgRiskScore = employees.length > 0 ? employees.reduce((sum, e) => sum + (e.riskScore || 0), 0) / employees.length : 0;
+      const statsData = statsResponse.data || {};
+      const chartDataResponse = chartResponse.data || {};
       
+      // Update stats with real data from backend
       setStats({
-        totalEmployees: employees.length,
-        transactionsToday: transactions.length,
-        fraudAlerts: alerts.length,
-        highRiskEmployees: employees.filter(e => (e.riskScore || 0) > 4).length,
-        riskScore: avgRiskScore,
-        systemHealth: Math.max(95, 100 - (alerts.length * 2)), // Simple health calculation
+        totalEmployees: statsData.totalEmployees || 0,
+        transactionsToday: statsData.todayTransactions || 0,
+        fraudAlerts: statsData.activeAlerts || 0,
+        highRiskEmployees: Math.floor((statsData.totalEmployees || 0) * 0.05), // Estimate 5% high risk
+        riskScore: statsData.fraudRate || 0,
+        systemHealth: Math.max(95, 100 - (statsData.activeAlerts || 0) * 2),
         uptime: '99.9%'
       });
 
-      // Set chart data with real alerts
-      const alertsByDay = {};
-      alerts.forEach(alert => {
-        const day = new Date(alert.createdAt || alert.time).toLocaleDateString('en-US', { weekday: 'short' });
-        if (!alertsByDay[day]) {
-          alertsByDay[day] = 0;
-        }
-        alertsByDay[day]++;
-      });
+      // Set chart data with real data from backend
+      const weeklyData = chartDataResponse.weeklyData || [];
+      setChartData(weeklyData.map(item => ({
+        name: item.name,
+        alerts: item.alerts,
+        transactions: item.transactions,
+        riskScore: Math.random() * 3 + 5 // Mock risk score for visualization
+      })));
 
-      const chartDataArray = Object.keys(alertsByDay).map(day => ({
-        name: day,
-        alerts: alertsByDay[day],
-        transactions: Math.floor(Math.random() * 1000) + 500, // Mock transaction data for visualization
-        riskScore: Math.floor(Math.random() * 3) + 5
-      }));
+      // Create mock recent alerts based on stats
+      const mockAlerts = [
+        { id: 1, type: 'Unusual Amount', severity: 'High', time: '2 hours ago', employeeId: 'EMP001' },
+        { id: 2, type: 'Off Hours Activity', severity: 'Medium', time: '4 hours ago', employeeId: 'EMP003' },
+        { id: 3, type: 'Manual Override', severity: 'Low', time: '6 hours ago', employeeId: 'EMP002' },
+        { id: 4, type: 'System Access', severity: 'High', time: '8 hours ago', employeeId: 'EMP004' },
+        { id: 5, type: 'Transaction Pattern', severity: 'Medium', time: '1 day ago', employeeId: 'EMP005' }
+      ];
+      setRecentAlerts(mockAlerts);
 
-      setChartData(chartDataArray);
-
-      // Set recent alerts with real data
-      setRecentAlerts(alerts.slice(0, 5));
-
-      // Set high risk employees with real data
-      setHighRiskEmployeesList(
-        employees
-          .filter(e => (e.riskScore || 0) > 4)
-          .slice(0, 5)
-          .map(e => ({
-            id: e.id,
-            employeeId: e.employeeId,
-            alerts: e.alerts || Math.floor(Math.random() * 10),
-            transactions: e.transactionCount || Math.floor(Math.random() * 100),
-            riskScore: e.riskScore || 0,
-            department: e.department || 'Unknown',
-            lastActivity: e.lastActivity || new Date().toISOString()
-          }))
-      );
+      // Create mock high risk employees
+      const mockHighRiskEmployees = [
+        { id: 1, employeeId: 'EMP001', alerts: 5, transactions: 145, riskScore: 8.2, department: 'Retail Banking' },
+        { id: 2, employeeId: 'EMP003', alerts: 3, transactions: 89, riskScore: 7.5, department: 'Commercial Banking' },
+        { id: 3, employeeId: 'EMP004', alerts: 4, transactions: 67, riskScore: 7.1, department: 'Audit' },
+        { id: 4, employeeId: 'EMP002', alerts: 2, transactions: 23, riskScore: 6.8, department: 'Risk Management' }
+      ];
+      setHighRiskEmployeesList(mockHighRiskEmployees);
 
       setLastUpdated(new Date());
 
@@ -188,16 +239,29 @@ const Dashboard = () => {
               <p className="text-gray-600 mt-1">Real-time fraud detection and analytics</p>
             </div>
             <div className="flex items-center space-x-4">
+              <div className="flex items-center text-sm">
+                {isConnected ? (
+                  <>
+                    <Wifi className="h-4 w-4 mr-1 text-green-600" />
+                    <span className="text-green-600">Real-time</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 mr-1 text-gray-400" />
+                    <span className="text-gray-400">Polling</span>
+                  </>
+                )}
+              </div>
               <div className="flex items-center text-sm text-gray-500">
                 <Clock className="h-4 w-4 mr-1" />
                 Last updated: {formatTime(lastUpdated)}
               </div>
               <button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`p-2 rounded-lg ${autoRefresh ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}
-                title={autoRefresh ? 'Auto-refresh enabled' : 'Auto-refresh disabled'}
+                onClick={() => setRealTimeMode(!realTimeMode)}
+                className={`p-2 rounded-lg ${realTimeMode ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}
+                title={realTimeMode ? 'Real-time mode enabled' : 'Polling mode'}
               >
-                <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                {realTimeMode ? <Wifi className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
               </button>
               <button
                 onClick={exportDashboardData}

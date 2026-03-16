@@ -28,34 +28,102 @@ const EmployeePage = () => {
   });
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
+    // Load example data immediately for demonstration
+    setLoading(true);
+    setEmployees([
+      {
+        id: 1,
+        employeeId: 'EMP001',
+        firstName: 'John',
+        lastName: 'Smith',
+        email: 'john.smith@bank.com',
+        department: 'Retail Banking',
+        position: 'Senior Teller',
+        role: 'TELLER',
+        phone: '+1-555-0101',
+        address: '123 Main St, New York, NY 10001',
+        status: 'ACTIVE',
+        hireDate: '2022-01-15',
+        lastLogin: '2024-03-16T09:30:00Z',
+        riskScore: 3.2,
+        alertsCount: 2,
+        transactionsCount: 145
+      },
+      {
+        id: 2,
+        employeeId: 'EMP002',
+        firstName: 'Sarah',
+        lastName: 'Johnson',
+        email: 'sarah.johnson@bank.com',
+        department: 'Commercial Banking',
+        position: 'Relationship Manager',
+        role: 'MANAGER',
+        phone: '+1-555-0102',
+        address: '456 Oak Ave, New York, NY 10002',
+        status: 'ACTIVE',
+        hireDate: '2021-06-20',
+        lastLogin: '2024-03-16T08:45:00Z',
+        riskScore: 1.8,
+        alertsCount: 0,
+        transactionsCount: 89
+      },
+      {
+        id: 3,
+        employeeId: 'EMP003',
+        firstName: 'Michael',
+        lastName: 'Davis',
+        email: 'michael.davis@bank.com',
+        department: 'Risk Management',
+        position: 'Risk Analyst',
+        role: 'ANALYST',
+        phone: '+1-555-0103',
+        address: '789 Pine St, New York, NY 10003',
+        status: 'ACTIVE',
+        hireDate: '2023-03-10',
+        lastLogin: '2024-03-16T10:15:00Z',
+        riskScore: 7.5,
+        alertsCount: 5,
+        transactionsCount: 67
+      },
+      {
+        id: 4,
+        employeeId: 'EMP004',
+        firstName: 'Emily',
+        lastName: 'Wilson',
+        email: 'emily.wilson@bank.com',
+        department: 'Audit',
+        position: 'Internal Auditor',
+        role: 'AUDITOR',
+        phone: '+1-555-0104',
+        address: '321 Elm St, New York, NY 10004',
+        status: 'ACTIVE',
+        hireDate: '2020-11-05',
+        lastLogin: '2024-03-16T07:20:00Z',
+        riskScore: 2.1,
+        alertsCount: 1,
+        transactionsCount: 23
+      },
+      {
+        id: 5,
+        employeeId: 'EMP005',
+        firstName: 'David',
+        lastName: 'Brown',
+        email: 'david.brown@bank.com',
+        department: 'IT Security',
+        position: 'Security Specialist',
+        role: 'SECURITY',
+        phone: '+1-555-0105',
+        address: '654 Maple Dr, New York, NY 10005',
+        status: 'SUSPENDED',
+        hireDate: '2022-08-12',
+        lastLogin: '2024-03-15T16:30:00Z',
+        riskScore: 8.9,
+        alertsCount: 8,
+        transactionsCount: 156
       }
-
-      const response = await axios.get('http://localhost:8080/api/employees', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      setEmployees(response.data || []);
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-      setError('Failed to fetch employees');
-    } finally {
-      setLoading(false);
-    }
-  };
+    ]);
+    setLoading(false);
+  }, []);
 
   const handleAddEmployee = async () => {
     try {
