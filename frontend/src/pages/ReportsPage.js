@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Download, AlertTriangle } from 'lucide-react';
 
@@ -12,11 +12,7 @@ const ReportsPage = () => {
   const [reports, setReports] = useState([]);
   const [scheduledReports, setScheduledReports] = useState([]);
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -29,7 +25,9 @@ const ReportsPage = () => {
           id: 1,
           name: 'Executive Summary - Q4 2023',
           type: 'summary',
-          description: 'Total fraud alerts: 347 | High-risk transactions: $2.3M',
+          description: user?.role === 'ADMIN' 
+            ? `Total fraud alerts: 347 | High-risk transactions: $2.3M | Total Risk Amount: $3.26M`
+            : `Total fraud alerts: 347 | High-risk transactions: $2.3M`,
           generatedAt: new Date().toISOString(),
           generatedBy: 'System',
           size: '2.3 MB',
@@ -37,6 +35,7 @@ const ReportsPage = () => {
           metrics: {
             totalAlerts: 347,
             highRiskAmount: 2300000,
+            ...(user?.role === 'ADMIN' && { totalRiskAmount: 3260000 }),
             blockedTransactions: 89,
             falsePositives: 23
           }
@@ -101,7 +100,23 @@ const ReportsPage = () => {
             hotspotRegion: 'Region 3',
             weeklyAvg: 28.5
           }
-        }
+        },
+        ...(user?.role === 'ADMIN' ? [{
+          id: 6,
+          name: 'Total Risk Assessment - December 2023',
+          type: 'totalrisk',
+          description: 'Total risk exposure: $3.26M across 47 high-risk employees',
+          generatedAt: new Date('2024-01-20T10:30:00').toISOString(),
+          generatedBy: 'System',
+          size: '5.2 MB',
+          format: 'excel',
+          metrics: {
+            totalRiskAmount: 3260000,
+            highRiskEmployees: 47,
+            averageRiskPerEmployee: 69362,
+            riskConcentration: 'Retail Banking (45%)'
+          }
+        }] : [])
       ];
 
       // Filter reports based on user role
@@ -116,9 +131,9 @@ const ReportsPage = () => {
       setError('Failed to load reports');
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchScheduledReports = async () => {
+  const fetchScheduledReports = useCallback(async () => {
     try {
       // Skip API calls for demo and load mock data directly
       
@@ -175,14 +190,22 @@ const ReportsPage = () => {
     } catch (err) {
       console.error('Error fetching scheduled reports:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+    fetchScheduledReports();
+  }, [fetchReports, fetchScheduledReports]);
 
   const reportTypes = [
     { id: 'summary', name: 'Executive Summary', description: 'High-level overview of fraud metrics' },
     { id: 'alerts', name: 'Alert Analysis', description: 'Detailed analysis of fraud alerts' },
     { id: 'employees', name: 'Employee Activity', description: 'Employee transaction patterns' },
     { id: 'transactions', name: 'Transaction Report', description: 'Comprehensive transaction data' },
-    { id: 'trends', name: 'Trend Analysis', description: 'Fraud patterns and trends' }
+    { id: 'trends', name: 'Trend Analysis', description: 'Fraud patterns and trends' },
+    ...(user?.role === 'ADMIN' ? [
+      { id: 'totalrisk', name: 'Total Risk Assessment', description: 'Complete risk exposure across all employees' }
+    ] : [])
   ];
 
   const dateRanges = [
@@ -317,8 +340,12 @@ const ReportsPage = () => {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">High Risk Amount</p>
-              <p className="text-2xl font-bold text-gray-900">$2.3M</p>
+              <p className="text-sm font-medium text-gray-600">
+                {user?.role === 'ADMIN' ? 'Total Risk Amount' : 'High Risk Amount'}
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {user?.role === 'ADMIN' ? '$3.26M' : '$2.3M'}
+              </p>
             </div>
             <div className="bg-orange-100 rounded-full p-3">
               <div className="h-6 w-6 text-orange-600">💰</div>

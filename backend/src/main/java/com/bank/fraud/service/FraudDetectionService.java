@@ -5,6 +5,7 @@ import com.bank.fraud.model.FraudAlert;
 import com.bank.fraud.model.Employee;
 import com.bank.fraud.repository.TransactionRepository;
 import com.bank.fraud.repository.FraudAlertRepository;
+import com.bank.fraud.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ public class FraudDetectionService {
     
     @Autowired
     private FraudAlertRepository fraudAlertRepository;
+    
+    @Autowired
+    private EmployeeRepository employeeRepository;
     
     public void analyzeTransaction(Transaction transaction) {
         // Check for unusual amounts
@@ -134,5 +138,35 @@ public class FraudDetectionService {
         alert.setResolvedAt(LocalDateTime.now());
         
         fraudAlertRepository.save(alert);
+    }
+    
+    public void updateEmployeeRiskAmount(Employee employee) {
+        // Calculate total risk amount based on employee's flagged transactions
+        List<Transaction> flaggedTransactions = transactionRepository.findByEmployeeEmployeeIdAndFlagged(
+            employee.getEmployeeId(), true);
+        
+        BigDecimal totalRiskAmount = flaggedTransactions.stream()
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        // Update employee's individual risk amount
+        employee.setIndividualRiskAmount(totalRiskAmount);
+        employeeRepository.save(employee);
+    }
+    
+    public BigDecimal calculateTotalRiskAmount() {
+        // Calculate total risk amount across all employees
+        List<Employee> allEmployees = employeeRepository.findAll();
+        
+        return allEmployees.stream()
+            .map(Employee::getIndividualRiskAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    public BigDecimal getEmployeeRiskAmount(String employeeId) {
+        Employee employee = employeeRepository.findByEmployeeId(employeeId)
+            .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+        
+        return employee.getIndividualRiskAmount();
     }
 }

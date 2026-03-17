@@ -15,6 +15,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     
     List<Transaction> findByEmployeeEmployeeId(String employeeId);
     
+    List<Transaction> findByEmployeeEmployeeIdAndFlagged(String employeeId, boolean flagged);
+    
     List<Transaction> findByAccountNumber(String accountNumber);
     
     List<Transaction> findByFlagged(boolean flagged);

@@ -58,9 +58,48 @@ const ProfilePage = () => {
     alert('Profile updated successfully!');
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
-    // Handle password change
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match!');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      alert('Password must be at least 6 characters long!');
+      return;
+    }
+    
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          employeeId: user?.employeeId,
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+      
+      if (response.ok) {
+        alert('Password changed successfully!');
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        const error = await response.json();
+        alert('Password change failed: ' + error.error);
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      alert('Password change failed. Please try again.');
+    }
   };
 
   const handleNotificationUpdate = (e) => {

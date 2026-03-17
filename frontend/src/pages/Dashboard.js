@@ -109,10 +109,10 @@ const Dashboard = () => {
 
       // Create mock high risk employees
       const mockHighRiskEmployees = [
-        { id: 1, employeeId: 'EMP001', alerts: 5, transactions: 145, riskScore: 8.2, department: 'Retail Banking' },
-        { id: 2, employeeId: 'EMP003', alerts: 3, transactions: 89, riskScore: 7.5, department: 'Commercial Banking' },
-        { id: 3, employeeId: 'EMP004', alerts: 4, transactions: 67, riskScore: 7.1, department: 'Audit' },
-        { id: 4, employeeId: 'EMP002', alerts: 2, transactions: 23, riskScore: 6.8, department: 'Risk Management' }
+        { id: 1, employeeId: 'EMP001', alerts: 5, transactions: 145, riskScore: 8.2, department: 'Retail Banking', individualRiskAmount: 125000 },
+        { id: 2, employeeId: 'EMP003', alerts: 3, transactions: 89, riskScore: 7.5, department: 'Commercial Banking', individualRiskAmount: 89000 },
+        { id: 3, employeeId: 'EMP004', alerts: 4, transactions: 67, riskScore: 7.1, department: 'Audit', individualRiskAmount: 67000 },
+        { id: 4, employeeId: 'EMP002', alerts: 2, transactions: 23, riskScore: 6.8, department: 'Risk Management', individualRiskAmount: 45000 }
       ];
       setHighRiskEmployeesList(mockHighRiskEmployees);
 
@@ -489,6 +489,11 @@ const Dashboard = () => {
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {employee.alerts} alerts • {employee.transactions} transactions
+                          {employee.individualRiskAmount && (
+                            <span className="ml-2 text-orange-600 font-medium">
+                              Risk: ${(employee.individualRiskAmount / 1000).toFixed(0)}K
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="ml-4">

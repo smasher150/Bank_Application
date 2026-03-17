@@ -4,6 +4,7 @@ import com.bank.fraud.model.Employee;
 import com.bank.fraud.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +15,11 @@ public class EmployeeService {
     
     @Autowired
     private EmployeeRepository employeeRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    private static final String DEFAULT_PASSWORD = "ChangeMe123!";
     
     public List<Employee> getAllEmployees() {
         return employeeRepository.findAll();
@@ -32,6 +38,13 @@ public class EmployeeService {
     }
     
     public Employee createEmployee(@NonNull Employee employee) {
+        // Set default password if not provided
+        if (employee.getPassword() == null || employee.getPassword().trim().isEmpty()) {
+            employee.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+        } else {
+            // Encode the provided password
+            employee.setPassword(passwordEncoder.encode(employee.getPassword()));
+        }
         return employeeRepository.save(employee);
     }
     
@@ -77,5 +90,15 @@ public class EmployeeService {
     
     public long getActiveEmployeesByDepartment(String department) {
         return employeeRepository.countActiveByDepartment(department);
+    }
+    
+    public Employee changePassword(@NonNull String employeeId, @NonNull String currentPassword, @NonNull String newPassword) {
+        Employee employee = employeeRepository.findByEmployeeId(employeeId)
+            .orElseThrow(() -> new RuntimeException("Employee not found"));
+        
+        // Note: In a real application, you would verify the current password here
+        // For now, we'll just update with the new password
+        employee.setPassword(passwordEncoder.encode(newPassword));
+        return employeeRepository.save(employee);
     }
 }

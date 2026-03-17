@@ -3,6 +3,7 @@ package com.bank.fraud.model;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,6 +40,9 @@ public class Employee {
     
     @Column(nullable = false)
     private String password;
+    
+    @Column(name = "individual_risk_amount", precision = 19, scale = 2)
+    private BigDecimal individualRiskAmount = BigDecimal.ZERO;
     
     @CreationTimestamp
     @Column(name = "created_at")
@@ -102,6 +106,9 @@ public class Employee {
     
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    
+    public BigDecimal getIndividualRiskAmount() { return individualRiskAmount; }
+    public void setIndividualRiskAmount(BigDecimal individualRiskAmount) { this.individualRiskAmount = individualRiskAmount; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

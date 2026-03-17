@@ -69,4 +69,31 @@ public class AuthController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData) {
+        try {
+            String employeeId = passwordData.get("employeeId");
+            String currentPassword = passwordData.get("currentPassword");
+            String newPassword = passwordData.get("newPassword");
+            
+            if (employeeId == null || currentPassword == null || newPassword == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "All fields are required");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            Employee updatedEmployee = employeeService.changePassword(employeeId, currentPassword, newPassword);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Password changed successfully");
+            response.put("employee", updatedEmployee);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Password change failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 }
