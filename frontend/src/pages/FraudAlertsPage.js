@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, Activity, Shield, TrendingUp } from 'lucide-react';
 
 const FraudAlertsPage = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalTransactions: 0,
     suspiciousTransactions: 0,

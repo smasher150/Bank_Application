@@ -28,46 +28,75 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
-    // Mock login for demo credentials
-    if (credentials.email === 'admin@bank.com' && credentials.password === 'admin123') {
-      const adminUser = {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@bank.com',
-        role: 'ADMIN',
-        employeeId: 'ADMIN001'
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const { token, employee } = data;
+        
+        // Check if employee data is missing (backend issue)
+        if (!employee) {
+          return { 
+            success: false, 
+            error: 'Authentication succeeded but user data is missing. Please check server status.' 
+          };
+        }
+        
+        setUser(employee);
+        setToken(token);
+        localStorage.setItem('token', token);
+        
+        return { success: true };
+      } else {
+        let errorMessage = 'Login failed';
+        
+        if (data.error) {
+          if (data.error.includes('Invalid credentials')) {
+            errorMessage = 'Invalid email or password';
+          } else if (data.error.includes('disabled')) {
+            errorMessage = 'Account is disabled';
+          } else if (data.error.includes('locked')) {
+            errorMessage = 'Account is locked';
+          } else {
+            errorMessage = data.error;
+          }
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Credentials may be correct, but server has issues. Please check server status.';
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please verify your credentials.';
+        } else {
+          errorMessage = `Server returned ${response.status}. Credentials may be correct, but please check server status.`;
+        }
+        
+        return { 
+          success: false, 
+          error: errorMessage 
+        };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Check if it's a network error vs other errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Network error. Please check if the backend server is running on localhost:8080' 
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: 'Unexpected error occurred. Credentials may be correct, but please check server status.' 
       };
-      
-      setUser(adminUser);
-      setToken('demo-admin-token');
-      localStorage.setItem('token', 'demo-admin-token');
-      
-      return { success: true };
     }
-    
-    // Check for other demo users
-    const demoUsers = [
-      { email: 'john.smith@bank.com', password: 'password123', firstName: 'John', lastName: 'Smith', role: 'TELLER', employeeId: 'EMP001' },
-      { email: 'sarah.johnson@bank.com', password: 'password123', firstName: 'Sarah', lastName: 'Johnson', role: 'MANAGER', employeeId: 'EMP002' },
-      { email: 'michael.brown@bank.com', password: 'password123', firstName: 'Michael', lastName: 'Brown', role: 'AUDITOR', employeeId: 'EMP003' }
-    ];
-    
-    const matchedUser = demoUsers.find(user => 
-      user.email === credentials.email && user.password === credentials.password
-    );
-    
-    if (matchedUser) {
-      setUser(matchedUser);
-      setToken('demo-user-token');
-      localStorage.setItem('token', 'demo-user-token');
-      
-      return { success: true };
-    }
-    
-    return { 
-      success: false, 
-      error: 'Invalid credentials' 
-    };
   };
 
   const logout = () => {

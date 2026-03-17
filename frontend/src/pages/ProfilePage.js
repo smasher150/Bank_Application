@@ -8,6 +8,9 @@ const ProfilePage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   
+  // Role-based access control
+  const canEditProfile = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -18,6 +21,7 @@ const ProfilePage = () => {
     address: '123 Banking St, Financial District, NY 10001'
   });
 
+  // Profile form with role-based restrictions
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -42,7 +46,16 @@ const ProfilePage = () => {
 
   const handleProfileUpdate = (e) => {
     e.preventDefault();
+    
+    // Check if user has permission to update profile
+    if (!canEditProfile) {
+      alert('Only administrators and managers can update profile information.');
+      return;
+    }
+    
     // Handle profile update
+    console.log('Profile updated:', profileData);
+    alert('Profile updated successfully!');
   };
 
   const handlePasswordChange = (e) => {

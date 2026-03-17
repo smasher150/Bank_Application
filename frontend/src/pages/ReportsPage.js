@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Download, AlertTriangle } from 'lucide-react';
 
 const ReportsPage = () => {
+  const { user } = useAuth();
   const [reportType, setReportType] = useState('summary');
   const [dateRange, setDateRange] = useState('last30days');
   const [format, setFormat] = useState('pdf');
@@ -12,7 +14,6 @@ const ReportsPage = () => {
 
   useEffect(() => {
     fetchReports();
-    fetchScheduledReports();
   }, []);
 
   const fetchReports = async () => {
@@ -23,7 +24,7 @@ const ReportsPage = () => {
       // This ensures reports load without authentication requirements
       
       // Generate recent reports with real metrics
-      const recentReports = [
+      const allReports = [
         {
           id: 1,
           name: 'Executive Summary - Q4 2023',
@@ -51,41 +52,38 @@ const ReportsPage = () => {
           format: 'excel',
           metrics: {
             criticalAlerts: 45,
-            resolved: 38,
-            pending: 7,
-            avgResolutionTime: '4.2 hours'
+            resolvedAlerts: 38,
+            pendingAlerts: 7
           }
         },
         {
           id: 3,
-          name: 'Employee Activity Report',
-          type: 'employees',
-          description: 'Active employees: 156 | Flagged activities: 12',
-          generatedAt: new Date('2024-01-08T09:15:00').toISOString(),
+          name: 'Transaction Analysis - December 2023',
+          type: 'transactions',
+          description: 'Suspicious patterns detected in 156 transactions',
+          generatedAt: new Date('2024-01-05T09:30:00').toISOString(),
           generatedBy: 'System',
-          size: '3.1 MB',
+          size: '3.2 MB',
           format: 'pdf',
           metrics: {
-            activeEmployees: 156,
-            flaggedActivities: 12,
-            avgTransactionsPerEmployee: 47,
-            suspiciousPatterns: 8
+            totalTransactions: 156,
+            suspiciousTransactions: 12,
+            blockedTransactions: 8
           }
         },
         {
           id: 4,
-          name: 'Transaction Fraud Analysis',
-          type: 'transactions',
-          description: 'Total transactions: 45.2K | Fraudulent: 0.8% | Amount: $127.3M',
-          generatedAt: new Date('2024-01-05T16:30:00').toISOString(),
+          name: 'Employee Risk Assessment - December 2023',
+          type: 'risk',
+          description: 'Risk scores for 1,247 employees with 47 high-risk individuals',
+          generatedAt: new Date('2024-01-15T16:45:00').toISOString(),
           generatedBy: 'System',
-          size: '4.7 MB',
-          format: 'csv',
+          size: '4.1 MB',
+          format: 'pdf',
           metrics: {
-            totalTransactions: 45200,
-            fraudulentRate: 0.8,
-            totalAmount: 127300000,
-            avgTransactionAmount: 2816
+            totalEmployees: 1247,
+            highRiskEmployees: 47,
+            averageRiskScore: 3.8
           }
         },
         {
@@ -106,12 +104,16 @@ const ReportsPage = () => {
         }
       ];
 
-      setReports(recentReports);
+      // Filter reports based on user role
+      const filteredReports = user?.role === 'ADMIN' 
+        ? allReports 
+        : allReports.filter(report => report.generatedBy === user?.employeeId || report.type === 'summary');
 
+      setReports(filteredReports);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching reports:', err);
       setError('Failed to load reports');
-    } finally {
       setLoading(false);
     }
   };

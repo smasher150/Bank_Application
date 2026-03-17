@@ -43,7 +43,7 @@ public class AuthController {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String token = jwtUtil.generateToken(userDetails.getUsername());
             
-            Optional<Employee> employee = employeeService.getEmployeeByEmployeeId(userDetails.getUsername());
+            Optional<Employee> employee = employeeService.getEmployeeByEmail(userDetails.getUsername());
             
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);

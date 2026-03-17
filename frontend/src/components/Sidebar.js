@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -11,6 +12,7 @@ import {
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   const menuItems = [
     {
@@ -18,11 +20,11 @@ const Sidebar = () => {
       label: 'Dashboard',
       icon: LayoutDashboard
     },
-    {
+    ...(user?.role === 'ADMIN' ? [{
       path: '/employees',
       label: 'Employees',
       icon: Users
-    },
+    }] : []),
     {
       path: '/transactions',
       label: 'Transactions',

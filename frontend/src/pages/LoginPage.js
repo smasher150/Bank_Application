@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Eye, EyeOff, Shield, AlertCircle, WifiOff, Server } from 'lucide-react';
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
@@ -36,6 +36,64 @@ const LoginPage = () => {
     }
     
     setLoading(false);
+  };
+
+  const getErrorIcon = () => {
+    if (error.includes('Network error')) {
+      return <WifiOff className="h-5 w-5 text-orange-600" />;
+    }
+    if (error.includes('Server error') || error.includes('server returned') || error.includes('Unexpected error')) {
+      return <Server className="h-5 w-5 text-yellow-600" />;
+    }
+    return <AlertCircle className="h-5 w-5 text-red-600" />;
+  };
+
+  const getErrorSeverity = () => {
+    if (error.includes('Network error')) {
+      return 'bg-orange-50 border-orange-200 text-orange-800';
+    }
+    if (error.includes('Server error') || error.includes('server returned') || error.includes('Unexpected error')) {
+      return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+    }
+    return 'bg-red-50 border-red-200 text-red-800';
+  };
+
+  const getErrorTitle = () => {
+    if (error.includes('Network error')) {
+      return 'Connection Error';
+    }
+    if (error.includes('Server error') || error.includes('server returned') || error.includes('Unexpected error')) {
+      return 'Server Issue';
+    }
+    if (error.includes('Account is disabled')) {
+      return 'Account Disabled';
+    }
+    if (error.includes('Account is locked')) {
+      return 'Account Locked';
+    }
+    return 'Authentication Failed';
+  };
+
+  const getErrorHelp = () => {
+    if (error.includes('Invalid email or password')) {
+      return 'Please check your credentials and try again.';
+    }
+    if (error.includes('Account is disabled')) {
+      return 'Please contact your administrator to reactivate your account.';
+    }
+    if (error.includes('Account is locked')) {
+      return 'Please contact your administrator to unlock your account.';
+    }
+    if (error.includes('Network error')) {
+      return 'Please ensure the backend server is running on localhost:8080';
+    }
+    if (error.includes('user data is missing')) {
+      return 'Your credentials are correct, but the server has a data retrieval issue. Please check server status.';
+    }
+    if (error.includes('Server error') || error.includes('server returned') || error.includes('Unexpected error')) {
+      return 'Your credentials may be correct, but the server is experiencing issues. Please check server status.';
+    }
+    return 'Please try again or contact support if the problem persists.';
   };
 
   return (
@@ -101,8 +159,21 @@ const LoginPage = () => {
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
+            <div className={`rounded-md border p-4 flex items-start space-x-3 animate-pulse ${getErrorSeverity()}`}>
+              <div className="flex-shrink-0">
+                {getErrorIcon()}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium">
+                  {getErrorTitle()}
+                </h3>
+                <div className="mt-1 text-sm">
+                  {error}
+                </div>
+                <div className="mt-2 text-xs">
+                  {getErrorHelp()}
+                </div>
+              </div>
             </div>
           )}
 
@@ -122,7 +193,10 @@ const LoginPage = () => {
           
           <div className="text-center">
             <p className="text-sm text-blue-100">
-              Demo Credentials: admin@bank.com / admin123
+              Backend Credentials: admin@bank.com / admin123
+            </p>
+            <p className="text-xs text-blue-200 mt-1">
+              Or: john.smith@bank.com / password123
             </p>
           </div>
         </form>

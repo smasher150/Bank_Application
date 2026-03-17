@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, Download } from 'lucide-react';
 
 const TransactionPage = () => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
@@ -12,7 +14,9 @@ const TransactionPage = () => {
   useEffect(() => {
     // Load example data immediately for demonstration
     setLoading(true);
-    setTransactions([
+    
+    // All transactions for admin, only user's own transactions for regular employees
+    const allTransactions = [
       {
         id: 1,
         transactionId: 'TXN001234567',
@@ -48,101 +52,33 @@ const TransactionPage = () => {
         amount: 50000.00,
         transactionType: 'PAYMENT',
         description: 'Large bill payment service',
-        transactionTime: '2024-03-16T08:45:00Z',
-        riskLevel: 'CRITICAL',
-        flagged: true,
-        employeeId: 'EMP005',
-        customerName: 'Corporate Client XYZ',
-        status: 'INVESTIGATION'
-      },
-      {
-        id: 4,
-        transactionId: 'TXN001234570',
-        accountNumber: 'ACC100123459',
-        amount: 1250.50,
-        transactionType: 'DEPOSIT',
-        description: 'Check deposit - payroll',
-        transactionTime: '2024-03-16T11:20:00Z',
+        transactionTime: '2024-03-16T14:20:00Z',
         riskLevel: 'MEDIUM',
-        flagged: false,
+        flagged: true,
         employeeId: 'EMP002',
-        customerName: 'Small Business Inc',
-        status: 'COMPLETED'
-      },
-      {
-        id: 5,
-        transactionId: 'TXN001234571',
-        accountNumber: 'ACC100123460',
-        amount: 75000.00,
-        transactionType: 'TRANSFER',
-        description: 'International wire transfer',
-        transactionTime: '2024-03-16T07:30:00Z',
-        riskLevel: 'HIGH',
-        flagged: true,
-        employeeId: 'EMP005',
-        customerName: 'Overseas Corporation',
-        status: 'MANUAL_REVIEW'
-      },
-      {
-        id: 6,
-        transactionId: 'TXN001234572',
-        accountNumber: 'ACC100123461',
-        amount: 89.99,
-        transactionType: 'PAYMENT',
-        description: 'Online subscription renewal',
-        transactionTime: '2024-03-16T12:00:00Z',
-        riskLevel: 'LOW',
-        flagged: false,
-        employeeId: 'EMP001',
-        customerName: 'Regular Customer',
-        status: 'COMPLETED'
-      },
-      {
-        id: 7,
-        transactionId: 'TXN001234573',
-        accountNumber: 'ACC100123462',
-        amount: 25000.00,
-        transactionType: 'WITHDRAWAL',
-        description: 'Large cash withdrawal - business purpose',
-        transactionTime: '2024-03-16T06:15:00Z',
-        riskLevel: 'MEDIUM',
-        flagged: true,
-        employeeId: 'EMP003',
-        customerName: 'Business Client LLC',
-        status: 'DOCUMENTATION_REQUIRED'
-      },
-      {
-        id: 8,
-        transactionId: 'TXN001234574',
-        accountNumber: 'ACC100123463',
-        amount: 450.25,
-        transactionType: 'DEPOSIT',
-        description: 'Mobile check deposit',
-        transactionTime: '2024-03-16T13:45:00Z',
-        riskLevel: 'LOW',
-        flagged: false,
-        employeeId: 'EMP004',
-        customerName: 'Individual Customer',
+        customerName: 'Bob Customer',
         status: 'COMPLETED'
       }
-    ]);
-    setLoading(false);
-  }, []);
+    ];
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = `${transaction.transactionId} ${transaction.accountNumber} ${transaction.description}`
-      .toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRisk = filterRisk === 'all' || transaction.riskLevel === filterRisk;
-    const matchesFlagged = filterFlagged === 'all' || 
-      (filterFlagged === 'flagged' && transaction.flagged) || 
-      (filterFlagged === 'unflagged' && !transaction.flagged);
-    const matchesType = filterType === 'all' || transaction.transactionType === filterType;
-    
-    return matchesSearch && matchesRisk && matchesFlagged && matchesType;
-  });
+    // Filter transactions based on user role
+    const filteredTransactions = user?.role === 'ADMIN' 
+      ? allTransactions 
+      : allTransactions.filter(txn => txn.employeeId === user?.employeeId);
+
+    setTransactions(filteredTransactions);
+    setLoading(false);
+  }, [user]);
 
   const riskLevels = ['all', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
   const transactionTypes = ['all', 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER', 'PAYMENT', 'REFUND'];
+
+  const getFilteredTransactions = () => {
+    // Filter transactions based on user role
+    return user?.role === 'ADMIN' 
+      ? transactions 
+      : transactions.filter(txn => txn.employeeId === user?.employeeId);
+  };
 
   const handleViewTransaction = (transaction) => {
     // Handle transaction view
@@ -286,7 +222,7 @@ const TransactionPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTransactions.map(transaction => (
+                  {getFilteredTransactions().map(transaction => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {transaction.transactionId}
@@ -341,7 +277,7 @@ const TransactionPage = () => {
           </div>
         )}
 
-      {filteredTransactions.length === 0 && !loading && (
+      {getFilteredTransactions().length === 0 && !loading && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-lg">No transactions found</div>
           <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>

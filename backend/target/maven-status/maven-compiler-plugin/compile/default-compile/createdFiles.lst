@@ -19,7 +19,6 @@ com\bank\fraud\dto\TransactionDTO.class
 com\bank\fraud\model\Transaction$RiskLevel.class
 com\bank\fraud\security\JwtAuthenticationFilter.class
 com\bank\fraud\controller\TransactionController.class
-com\bank\fraud\service\FraudDetectionService_TEMP.class
 com\bank\fraud\model\Employee$Role.class
 com\bank\fraud\repository\TransactionRepository.class
 com\bank\fraud\model\AuditLog.class

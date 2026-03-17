@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard.js';
 import EmployeePage from './pages/EmployeePage';
@@ -27,11 +28,11 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/employees" element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <Layout>
                   <EmployeePage />
                 </Layout>
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             } />
             <Route path="/transactions" element={
               <ProtectedRoute>

@@ -27,6 +27,10 @@ public class EmployeeService {
         return employeeRepository.findByEmployeeId(employeeId);
     }
     
+    public Optional<Employee> getEmployeeByEmail(String email) {
+        return employeeRepository.findByEmail(email);
+    }
+    
     public Employee createEmployee(@NonNull Employee employee) {
         return employeeRepository.save(employee);
     }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, Users, Activity, AlertTriangle, TrendingUp, Eye, Settings, Plus, X } from 'lucide-react';
 
 const EmployeePage = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
@@ -25,6 +27,13 @@ const EmployeePage = () => {
     phone: '',
     address: ''
   });
+
+  // Redirect non-admin users away from this page
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      window.location.href = '/dashboard';
+    }
+  }, [user]);
 
   useEffect(() => {
     // Load example data immediately for demonstration
