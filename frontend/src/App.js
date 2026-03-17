@@ -9,6 +9,7 @@ import EmployeePage from './pages/EmployeePage';
 import TransactionPage from './pages/TransactionPage';
 import FraudAlertsPage from './pages/FraudAlertsPage';
 import ReportsPage from './pages/ReportsPage';
+import TransferPage from './pages/TransferPage';
 import ProfilePage from './pages/ProfilePage';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -38,6 +39,13 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <TransactionPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/transfer" element={
+              <ProtectedRoute>
+                <Layout>
+                  <TransferPage />
                 </Layout>
               </ProtectedRoute>
             } />

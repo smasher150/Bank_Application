@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Users, 
   Receipt, 
+  ArrowUpDown,
   AlertTriangle, 
   FileText, 
   UserCircle 
@@ -29,6 +30,11 @@ const Sidebar = () => {
       path: '/transactions',
       label: 'Transactions',
       icon: Receipt
+    },
+    {
+      path: '/transfer',
+      label: 'Money Transfer',
+      icon: ArrowUpDown
     },
     {
       path: '/fraud-alerts',

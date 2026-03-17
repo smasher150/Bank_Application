@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Shield, Settings, Bell, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, Shield, Settings, Bell, Eye, EyeOff, ArrowUpDown, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage = () => {
@@ -7,6 +7,8 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
   
   // Role-based access control
   const canEditProfile = user?.role === 'ADMIN' || user?.role === 'MANAGER';
@@ -39,6 +41,7 @@ const ProfilePage = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'transactions', label: 'Transaction History', icon: ArrowUpDown },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -106,6 +109,37 @@ const ProfilePage = () => {
     e.preventDefault();
     // Handle notification settings update
   };
+
+  const fetchTransactionHistory = useCallback(async () => {
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/transactions');
+      if (response.ok) {
+        const allTransactions = await response.json();
+        // Filter transactions for the current user or show all for admins
+        const userTransactions = user?.role === 'ADMIN' 
+          ? allTransactions 
+          : allTransactions.filter(t => t.employeeId === user?.employeeId);
+        
+        // Sort by date (most recent first) and take last 10
+        const recentTransactions = userTransactions
+          .sort((a, b) => new Date(b.transactionTime) - new Date(a.transactionTime))
+          .slice(0, 10);
+        
+        setTransactionHistory(recentTransactions);
+      }
+    } catch (err) {
+      console.error('Failed to fetch transaction history:', err);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'transactions' && user?.employeeId) {
+      fetchTransactionHistory();
+    }
+  }, [activeTab, user, fetchTransactionHistory]);
 
   return (
     <div className="space-y-6">
@@ -245,6 +279,139 @@ const ProfilePage = () => {
                 </button>
               </div>
             </form>
+          )}
+
+          {activeTab === 'transactions' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Transaction History</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {user?.role === 'ADMIN' 
+                    ? 'Showing your recent transactions and system-wide activity'
+                    : 'Your recent transaction activity'}
+                </p>
+              </div>
+
+              {loadingTransactions ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="ml-3 text-gray-600">Loading transactions...</span>
+                </div>
+              ) : transactionHistory.length > 0 ? (
+                <div className="bg-gray-50 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Transaction ID
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Risk
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {transactionHistory.map((transaction) => (
+                          <tr key={transaction.id} className={`hover:bg-gray-50 ${
+                            transaction.flagged && transaction.riskLevel === 'HIGH' ? 'bg-red-50' : ''
+                          }`}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              <div className="flex items-center">
+                                {transaction.transactionId}
+                                {transaction.flagged && (
+                                  <span className="ml-2">
+                                    {transaction.riskLevel === 'HIGH' ? (
+                                      <AlertTriangle className="h-4 w-4 text-red-600" title="High-risk flagged transaction" />
+                                    ) : (
+                                      <AlertTriangle className="h-4 w-4 text-orange-600" title="Flagged transaction" />
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                transaction.transactionType === 'TRANSFER' ? 'bg-blue-100 text-blue-800' :
+                                transaction.transactionType === 'WITHDRAWAL' ? 'bg-red-100 text-red-800' :
+                                transaction.transactionType === 'DEPOSIT' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {transaction.transactionType}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${transaction.amount.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(transaction.transactionTime).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                transaction.riskLevel === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                                transaction.riskLevel === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                                transaction.riskLevel === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {transaction.riskLevel}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                transaction.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                                transaction.status === 'REVIEW_PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {transaction.status.replace('_', ' ')}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <ArrowUpDown className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No transactions</h3>
+                  <p className="mt-1 text-sm text-gray-500">No transaction history available.</p>
+                </div>
+              )}
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Transaction Monitoring
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>Your transactions are monitored for suspicious activity. High-risk transactions may be flagged for review.</p>
+                      {transactionHistory.filter(t => t.flagged).length > 0 && (
+                        <p className="mt-1">
+                          You have {transactionHistory.filter(t => t.flagged).length} flagged transaction(s) requiring attention.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === 'security' && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Filter, Download, AlertTriangle, Flag } from 'lucide-react';
 
 const TransactionPage = () => {
   const { user } = useAuth();
@@ -223,9 +223,22 @@ const TransactionPage = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {getFilteredTransactions().map(transaction => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
+                    <tr key={transaction.id} className={`hover:bg-gray-50 ${
+                      transaction.flagged && transaction.riskLevel === 'HIGH' ? 'bg-red-50' : ''
+                    }`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {transaction.transactionId}
+                        <div className="flex items-center">
+                          {transaction.transactionId}
+                          {transaction.flagged && (
+                            <span className="ml-2">
+                              {transaction.riskLevel === 'HIGH' ? (
+                                <AlertTriangle className="h-4 w-4 text-red-600" title="High-risk flagged transaction" />
+                              ) : (
+                                <Flag className="h-4 w-4 text-orange-600" title="Flagged transaction" />
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {transaction.accountNumber}

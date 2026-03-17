@@ -101,4 +101,16 @@ public class EmployeeService {
         employee.setPassword(passwordEncoder.encode(newPassword));
         return employeeRepository.save(employee);
     }
+    
+    // New method for transfer functionality
+    public Optional<Employee> getEmployeeByAccountNumber(String accountNumber) {
+        // For demo purposes, we'll search by employeeId as accountNumber
+        // In a real system, you would have a dedicated accountNumber field
+        return employeeRepository.findByEmployeeId(accountNumber);
+    }
+    
+    // New method to update employee directly
+    public Employee updateEmployee(@NonNull Employee employee) {
+        return employeeRepository.save(employee);
+    }
 }
