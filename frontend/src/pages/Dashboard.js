@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { AlertTriangle, Users, UserCheck, Activity, Clock, RefreshCw, Download, Wifi, WifiOff } from 'lucide-react';
 import FraudChart from '../components/FraudChart';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     transactionsToday: 0,
@@ -12,7 +14,11 @@ const Dashboard = () => {
     highRiskEmployees: 0,
     riskScore: 0,
     systemHealth: 100,
-    uptime: '99.9%'
+    uptime: '99.9%',
+    // Add role-specific stats
+    myTransactions: 0,
+    myAlerts: 0,
+    myRiskScore: 0
   });
   
   const [chartData, setChartData] = useState([]);
@@ -26,7 +32,103 @@ const Dashboard = () => {
   const [realTimeMode, setRealTimeMode] = useState(true);
   const stompClientRef = useRef(null);
 
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Skip API calls for demo and load mock data directly
+      // This ensures dashboard loads without authentication requirements
+      
+      // Load different data based on user role
+      let mockStats;
+      if (user?.role === 'ADMIN') {
+        // Admin sees all data
+        mockStats = {
+          totalEmployees: 156,
+          transactionsToday: 3421,
+          fraudAlerts: 47,
+          highRiskEmployees: 8,
+          riskScore: 6.2,
+          systemHealth: 92,
+          uptime: '99.9%',
+          myTransactions: 0,
+          myAlerts: 0,
+          myRiskScore: 0
+        };
+      } else {
+        // Regular employees see only their data
+        const employeeTransactions = 3421; // Total transactions in system
+        const employeeAlerts = 47; // Total alerts in system
+        const userTransactionShare = 0.1; // Estimate user's share (10% of transactions)
+        const userAlertShare = 0.15; // Estimate user's share (30% of alerts)
+        
+        mockStats = {
+          totalEmployees: Math.floor(156 * 0.1), // Employees in their department
+          transactionsToday: Math.floor(employeeTransactions * userTransactionShare),
+          fraudAlerts: Math.floor(employeeAlerts * userAlertShare),
+          highRiskEmployees: Math.floor(8 * 0.1), // High-risk employees in their department
+          riskScore: 3.8, // Average risk score
+          myTransactions: Math.floor(employeeTransactions * userTransactionShare),
+          myAlerts: Math.floor(employeeAlerts * userAlertShare),
+          myRiskScore: 3.8,
+          systemHealth: 95, // Slightly lower to show they don't see everything
+          uptime: '99.5%'
+        };
+      }
+      
+      setStats(mockStats);
+
+      // Load mock chart data
+      const mockChartData = [
+        { name: 'Mon', alerts: 12, transactions: 523, riskScore: 5.8 },
+        { name: 'Tue', alerts: 8, transactions: 445, riskScore: 4.9 },
+        { name: 'Wed', alerts: 15, transactions: 678, riskScore: 7.2 },
+        { name: 'Thu', alerts: 6, transactions: 389, riskScore: 4.1 },
+        { name: 'Fri', alerts: 11, transactions: 567, riskScore: 6.5 },
+        { name: 'Sat', alerts: 4, transactions: 234, riskScore: 3.8 },
+        { name: 'Sun', alerts: 3, transactions: 189, riskScore: 3.2 }
+      ];
+      setChartData(mockChartData);
+
+      // Create mock recent alerts
+      const mockAlerts = [
+        { id: 1, type: 'Unusual Amount', severity: 'High', time: '2 hours ago', employeeId: 'EMP001' },
+        { id: 2, type: 'Off Hours Activity', severity: 'Medium', time: '4 hours ago', employeeId: 'EMP003' },
+        { id: 3, type: 'Manual Override', severity: 'Low', time: '6 hours ago', employeeId: 'EMP002' },
+        { id: 4, type: 'System Access', severity: 'High', time: '8 hours ago', employeeId: 'EMP004' },
+        { id: 5, type: 'Transaction Pattern', severity: 'Medium', time: '1 day ago', employeeId: 'EMP005' }
+      ];
+      setRecentAlerts(mockAlerts);
+
+      // Create mock high risk employees
+      const mockHighRiskEmployees = [
+        { id: 1, employeeId: 'EMP001', alerts: 5, transactions: 145, riskScore: 8.2, department: 'Retail Banking' },
+        { id: 2, employeeId: 'EMP003', alerts: 3, transactions: 89, riskScore: 7.5, department: 'Commercial Banking' },
+        { id: 3, employeeId: 'EMP004', alerts: 4, transactions: 67, riskScore: 7.1, department: 'Audit' },
+        { id: 4, employeeId: 'EMP002', alerts: 2, transactions: 23, riskScore: 6.8, department: 'Risk Management' }
+      ];
+      setHighRiskEmployeesList(mockHighRiskEmployees);
+
+      setLastUpdated(new Date());
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
+    // Initial data fetch
     fetchDashboardData();
     
     if (realTimeMode) {
@@ -42,7 +144,7 @@ const Dashboard = () => {
     return () => {
       disconnectWebSocket();
     };
-  }, [realTimeMode]);
+  }, [realTimeMode, user, fetchDashboardData]);
 
   const connectWebSocket = () => {
     const socket = new SockJS('http://localhost:8080/ws');
@@ -103,74 +205,6 @@ const Dashboard = () => {
       stompClientRef.current.disconnect();
       setIsConnected(false);
     }
-  };
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Skip API calls for demo and load mock data directly
-      // This ensures dashboard loads without authentication requirements
-      
-      // Load mock dashboard data
-      const mockStats = {
-        totalEmployees: 156,
-        transactionsToday: 3421,
-        fraudAlerts: 47,
-        highRiskEmployees: 8,
-        riskScore: 6.2,
-        systemHealth: 92,
-        uptime: '99.9%'
-      };
-      
-      setStats(mockStats);
-
-      // Load mock chart data
-      const mockChartData = [
-        { name: 'Mon', alerts: 12, transactions: 523, riskScore: 5.8 },
-        { name: 'Tue', alerts: 8, transactions: 445, riskScore: 4.9 },
-        { name: 'Wed', alerts: 15, transactions: 678, riskScore: 7.2 },
-        { name: 'Thu', alerts: 6, transactions: 389, riskScore: 4.1 },
-        { name: 'Fri', alerts: 11, transactions: 567, riskScore: 6.5 },
-        { name: 'Sat', alerts: 4, transactions: 234, riskScore: 3.8 },
-        { name: 'Sun', alerts: 3, transactions: 189, riskScore: 3.2 }
-      ];
-      setChartData(mockChartData);
-
-      // Create mock recent alerts
-      const mockAlerts = [
-        { id: 1, type: 'Unusual Amount', severity: 'High', time: '2 hours ago', employeeId: 'EMP001' },
-        { id: 2, type: 'Off Hours Activity', severity: 'Medium', time: '4 hours ago', employeeId: 'EMP003' },
-        { id: 3, type: 'Manual Override', severity: 'Low', time: '6 hours ago', employeeId: 'EMP002' },
-        { id: 4, type: 'System Access', severity: 'High', time: '8 hours ago', employeeId: 'EMP004' },
-        { id: 5, type: 'Transaction Pattern', severity: 'Medium', time: '1 day ago', employeeId: 'EMP005' }
-      ];
-      setRecentAlerts(mockAlerts);
-
-      // Create mock high risk employees
-      const mockHighRiskEmployees = [
-        { id: 1, employeeId: 'EMP001', alerts: 5, transactions: 145, riskScore: 8.2, department: 'Retail Banking' },
-        { id: 2, employeeId: 'EMP003', alerts: 3, transactions: 89, riskScore: 7.5, department: 'Commercial Banking' },
-        { id: 3, employeeId: 'EMP004', alerts: 4, transactions: 67, riskScore: 7.1, department: 'Audit' },
-        { id: 4, employeeId: 'EMP002', alerts: 2, transactions: 23, riskScore: 6.8, department: 'Risk Management' }
-      ];
-      setHighRiskEmployeesList(mockHighRiskEmployees);
-
-      setLastUpdated(new Date());
-
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const getRiskColor = (score) => {
